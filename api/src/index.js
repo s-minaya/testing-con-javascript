@@ -1,10 +1,12 @@
-const { config } = require('./config');
-const createApp = require('./app');
+/* eslint-disable quotes */
+const { config } = require("./config");
+const createApp = require("./app");
 
 const app = createApp();
 
 app.listen(config.port, (err) => {
   if (err) {
-    console.error('Error: ', err);
+    // eslint-disable-next-line no-console
+    console.error("Error: ", err);
   }
 });
