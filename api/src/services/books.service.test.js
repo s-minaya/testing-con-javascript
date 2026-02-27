@@ -2,15 +2,8 @@
 /* eslint-disable implicit-arrow-linebreak */
 /* eslint-disable no-unused-vars */
 /* eslint-disable no-console */
-/* eslint-disable quotes */
+const { generateManyBooks } = require("../fakes/book.fake");
 const BooksService = require("./books.service");
-
-const fakeBooks = [
-  {
-    _id: 1,
-    name: "Harry Potter",
-  },
-];
 
 const mockGetAll = jest.fn();
 
@@ -28,41 +21,45 @@ jest.mock("../lib/mongo.lib", () =>
 
 describe("Test for BooksService", () => {
   let service;
+
   beforeEach(() => {
-    service = new BooksService();
     jest.clearAllMocks();
+    service = new BooksService();
   });
 
-  describe("Test for getBooks", () => {
-    test("Should return a list book", async () => {
+  describe("getBooks method", () => {
+    test("should return an array with the same length as the fake data and call the DB once", async () => {
       // Arrange
+      const fakeBooks = generateManyBooks(20);
       mockGetAll.mockResolvedValue(fakeBooks);
+
       // Act
       const books = await service.getBooks({});
       console.log(books);
 
       // Assert
-      expect(books.length).toEqual(1);
-      expect(mockGetAll).toHaveBeenCalled(); // Verificar que se llamó a getAll
-      expect(mockGetAll).toHaveBeenCalledTimes(1); // Verificar que se llamó una vez
-      expect(mockGetAll).toHaveBeenCalledWith("books", {}); // Verificar que se llamó con los argumentos correctos
+      expect(Array.isArray(books)).toBe(true);
+      expect(books.length).toEqual(fakeBooks.length);
+      expect(mockGetAll).toHaveBeenCalledTimes(1);
+      expect(mockGetAll).toHaveBeenCalledWith("books", {});
     });
-  });
-  describe("Test for getBooks", () => {
-    test("Should return a list book", async () => {
+
+    test("should return the same first book object provided by the fake generator", async () => {
       // Arrange
-      mockGetAll.mockResolvedValue([
-        {
-          _id: 1,
-          name: "Harry Potter 2",
-        },
-      ]);
+      const fakeBooks = generateManyBooks(4);
+      mockGetAll.mockResolvedValue(fakeBooks);
+
       // Act
       const books = await service.getBooks({});
       console.log(books);
+      // Debug information in case of failure
+      // console.log('books', books);
 
       // Assert
-      expect(books[0].name).toEqual("Harry Potter 2");
+      expect(Array.isArray(books)).toBe(true);
+      expect(books.length).toBeGreaterThan(0);
+      expect(books[0]).toBeDefined();
+      expect(books[0].name).toEqual(fakeBooks[0].name);
     });
   });
 });
