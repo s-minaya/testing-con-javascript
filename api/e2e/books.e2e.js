@@ -1,3 +1,4 @@
+/* eslint-disable no-promise-executor-return */
 /* eslint-disable function-paren-newline */
 /* eslint-disable implicit-arrow-linebreak */
 /* eslint-disable no-unused-vars */
@@ -28,6 +29,7 @@ describe("Test for books", () => {
     client = new MongoClient(MONGO_URI);
     await client.connect();
     database = client.db(DB_NAME);
+    if (!database) throw new Error("Database connection failed");
   }, 30000);
 
   afterAll(async () => {
