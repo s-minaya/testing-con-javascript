@@ -21,6 +21,8 @@ describe("Test for books", () => {
   let database = null;
 
   beforeAll(async () => {
+    console.log("MONGO_URI:", MONGO_URI);
+    console.log("DB_NAME:", DB_NAME);
     app = createApp();
     server = app.listen(3001);
     client = new MongoClient(MONGO_URI);
@@ -29,7 +31,7 @@ describe("Test for books", () => {
   }, 30000);
 
   afterAll(async () => {
-    await server.close();
+    await new Promise((resolve) => server.close(resolve));
     if (database) {
       await database.dropDatabase();
     }
