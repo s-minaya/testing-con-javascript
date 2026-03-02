@@ -22,7 +22,7 @@ describe("Test for books", () => {
   let database = null;
 
   // Helper para reintentar conexión a MongoDB
-  async function connectWithRetry(uri, dbName, maxRetries = 10, delayMs = 2000) {
+  async function connectWithRetry(uri, dbName, maxRetries = 20, delayMs = 4000) {
     let lastErr;
     for (let i = 0; i < maxRetries; i++) {
       try {
