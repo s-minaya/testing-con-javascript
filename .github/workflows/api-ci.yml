@@ -11,6 +11,26 @@ defaults:
     working-directory: ./api
 
 jobs:
+  linter:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
   unit-test:
     runs-on: ubuntu-latest
 
@@ -30,3 +50,27 @@ jobs:
 
       - name: Run unit tests
         run: npm run test
+
+  e2e:
+    runs-on: ubuntu-latest
+
+    services:
+      mongo-e2e:
+        image: mongo:4.4
+        env:
+          MONGO_INITDB_ROOT_USERNAME: test
+          MONGO_INITDB_ROOT_PASSWORD: test123
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: install
+        shell: bash
+        run: npm ci
+      - name: Run e2e tests
+        run: npm run test:e2e
+        env:
+          MONGO_DB_NAME: demo
+          MONGO_URL: mongodb://test:test123@mongo-e2e:27017?retryWrites=true&writeConcern=majority
