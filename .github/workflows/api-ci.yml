@@ -74,8 +74,10 @@ jobs:
       - name: install
         shell: bash
         run: npm ci
+        working-directory: ./api
       - name: Run e2e tests
         run: npm run test:e2e
+        working-directory: ./api
         env:
           MONGO_DB_NAME: demo
           MONGO_URL: mongodb://test:test123@mongo:27017/demo?authSource=admin&retryWrites=true&writeConcern=majority
