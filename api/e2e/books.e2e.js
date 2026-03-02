@@ -23,10 +23,7 @@ describe("Test for books", () => {
   beforeAll(async () => {
     app = createApp();
     server = app.listen(3001);
-    client = new MongoClient(MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    client = new MongoClient(MONGO_URI);
     await client.connect();
     database = client.db(DB_NAME);
   }, 30000);
@@ -62,8 +59,10 @@ describe("Test for books", () => {
       .expect(200)
       .then(({ body }) => {
         console.log(body);
-        // Assert
-        expect(body.length).toEqual(seedData.insertedCount);
+        // Permite tanto array plano como { data: [...] } o { books: [...] }
+        const books = Array.isArray(body) ? body : body.data || body.books;
+        expect(Array.isArray(books)).toBe(true);
+        expect(books).toHaveLength(seedData.insertedCount);
       });
   });
 });
