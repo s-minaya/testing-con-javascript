@@ -6,5 +6,6 @@
   "transformIgnorePatterns": ["node_modules/(?!(@faker-js)/)"],
   "transform": {
     "^.+\\.js$": "babel-jest"
-  }
+  },
+  "maxWorkers": 1
 }

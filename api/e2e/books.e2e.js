@@ -27,7 +27,7 @@ describe("Test for books", () => {
     });
     await client.connect();
     database = client.db(DB_NAME);
-  });
+  }, 30000);
   afterAll(async () => {
     await server.close();
     await database.dropDatabase();
