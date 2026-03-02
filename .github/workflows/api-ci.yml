@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      mongo-e2e:
+      mongo:
         image: mongo:4.4
         env:
           MONGO_INITDB_ROOT_USERNAME: test
@@ -78,4 +78,4 @@ jobs:
         run: npm run test:e2e
         env:
           MONGO_DB_NAME: demo
-          MONGO_URL: mongodb://test:test123@mongo-e2e:27017/demo?authSource=admin&retryWrites=true&writeConcern=majority
+          MONGO_URL: mongodb://test:test123@mongo:27017/demo?authSource=admin&retryWrites=true&writeConcern=majority
