@@ -21,16 +21,37 @@ describe("Test for books", () => {
   let client = null;
   let database = null;
 
+  // Helper para reintentar conexión a MongoDB
+  async function connectWithRetry(uri, dbName, maxRetries = 10, delayMs = 2000) {
+    let lastErr;
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const cli = new MongoClient(uri);
+        await cli.connect();
+        const db = cli.db(dbName);
+        // Prueba una operación simple para asegurar conexión
+        await db.command({ ping: 1 });
+        return { cli, db };
+      } catch (err) {
+        lastErr = err;
+        console.log(`MongoDB connection attempt ${i + 1} failed:`, err.message);
+        await new Promise((res) => setTimeout(res, delayMs));
+      }
+    }
+    throw lastErr;
+  }
+
   beforeAll(async () => {
     console.log("MONGO_URI:", MONGO_URI);
     console.log("DB_NAME:", DB_NAME);
     app = createApp();
     server = app.listen(3001);
-    client = new MongoClient(MONGO_URI);
-    await client.connect();
-    database = client.db(DB_NAME);
+    // Reintenta la conexión a MongoDB
+    const result = await connectWithRetry(MONGO_URI, DB_NAME);
+    client = result.cli;
+    database = result.db;
     if (!database) throw new Error("Database connection failed");
-  }, 30000);
+  }, 60000);
 
   afterAll(async () => {
     await new Promise((resolve) => server.close(resolve));
