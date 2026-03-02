@@ -1,93 +1,90 @@
-/* eslint-disable no-promise-executor-return */
-/* eslint-disable function-paren-newline */
-/* eslint-disable implicit-arrow-linebreak */
-/* eslint-disable no-unused-vars */
 /* eslint-disable no-console */
+/* eslint-disable implicit-arrow-linebreak */
 
 const request = require("supertest");
-
 const { MongoClient } = require("mongodb");
-
 const { config } = require("../src/config");
+const createApp = require("../src/app");
 
 const DB_NAME = config.dbName;
 const MONGO_URI = config.dbUrl;
 
-const createApp = require("../src/app");
+describe("Test for books (E2E)", () => {
+  let app;
+  let server;
+  let client;
+  let database;
 
-describe("Test for books", () => {
-  let app = null;
-  let server = null;
-  let client = null;
-  let database = null;
+  // Helper para reintentar conexión a MongoDB (CI-safe)
+  async function connectWithRetry(uri, dbName, maxRetries = 20, delayMs = 3000) {
+    let lastError;
 
-  // Helper para reintentar conexión a MongoDB
-  async function connectWithRetry(uri, dbName, maxRetries = 20, delayMs = 4000) {
-    let lastErr;
-    for (let i = 0; i < maxRetries; i++) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        const cli = new MongoClient(uri);
+        const cli = new MongoClient(uri, {
+          serverSelectionTimeoutMS: 2000,
+        });
+
         await cli.connect();
         const db = cli.db(dbName);
-        // Prueba una operación simple para asegurar conexión
         await db.command({ ping: 1 });
+
         return { cli, db };
-      } catch (err) {
-        lastErr = err;
-        console.log(`MongoDB connection attempt ${i + 1} failed:`, err.message);
+      } catch (error) {
+        lastError = error;
+        console.log(`MongoDB connection attempt ${attempt} failed: ${error.message}`);
         await new Promise((res) => setTimeout(res, delayMs));
       }
     }
-    throw lastErr;
+
+    throw lastError;
   }
 
   beforeAll(async () => {
-    console.log("MONGO_URI:", MONGO_URI);
-    console.log("DB_NAME:", DB_NAME);
     app = createApp();
     server = app.listen(3001);
-    // Reintenta la conexión a MongoDB
-    const result = await connectWithRetry(MONGO_URI, DB_NAME);
-    client = result.cli;
-    database = result.db;
-    if (!database) throw new Error("Database connection failed");
+
+    const connection = await connectWithRetry(MONGO_URI, DB_NAME);
+    client = connection.cli;
+    database = connection.db;
   }, 60000);
 
+  afterEach(async () => {
+    // Mantiene los tests aislados
+    if (database) {
+      await database.collection("books").deleteMany({});
+    }
+  });
+
   afterAll(async () => {
-    await new Promise((resolve) => server.close(resolve));
     if (database) {
       await database.dropDatabase();
     }
+
     if (client) {
       await client.close();
     }
+
+    if (server) {
+      await new Promise((resolve) => server.close(resolve));
+    }
   });
-  test("should return a list books", async () => {
+
+  test("should return a list of books", async () => {
     // Arrange
-    const seedData = await database.collection("books").insertMany([
-      {
-        name: "Book 1",
-        year: 1995,
-        author: "Sofia",
-      },
-      {
-        name: "Book 2",
-        year: 2000,
-        author: "Nicolas",
-      },
+    const seedResult = await database.collection("books").insertMany([
+      { name: "Book 1", year: 1995, author: "Sofia" },
+      { name: "Book 2", year: 2000, author: "Nicolas" },
     ]);
-    console.log(seedData);
 
     // Act
-    return request(app)
-      .get("/api/v1/books")
-      .expect(200)
-      .then(({ body }) => {
-        console.log(body);
-        // Permite tanto array plano como { data: [...] } o { books: [...] }
-        const books = Array.isArray(body) ? body : body.data || body.books;
-        expect(Array.isArray(books)).toBe(true);
-        expect(books).toHaveLength(seedData.insertedCount);
-      });
+    const response = await request(app).get("/api/v1/books").expect(200);
+
+    // Assert
+    const body = response.body;
+    const books = Array.isArray(body) ? body : body.data || body.books;
+
+    expect(Array.isArray(books)).toBe(true);
+    expect(books).toHaveLength(seedResult.insertedCount);
   });
 });

@@ -75,9 +75,21 @@ jobs:
         shell: bash
         run: npm ci
         working-directory: ./api
+      - name: Wait for MongoDB
+        run: |
+          for i in {1..30}; do
+            if nc -z 127.0.0.1 27017; then
+              echo "Mongo is up"
+              exit 0
+            fi
+            echo "Waiting for Mongo..."
+            sleep 2
+          done
+          echo "Mongo did not become ready in time"
+          exit 1
       - name: Run e2e tests
         run: npm run test:e2e
         working-directory: ./api
         env:
           MONGO_DB_NAME: demo
-          MONGO_URL: mongodb://test:test123@mongo:27017/demo?authSource=admin&retryWrites=true&writeConcern=majority
+          MONGO_URL: mongodb://test:test123@127.0.0.1:27017/demo?authSource=admin
